@@ -1,0 +1,10 @@
+name: clscoring
+title:
+username:
+account: cell-line-scoring
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 576312
+bundleId: 1704782
+url: https://cell-line-scoring.shinyapps.io/clscoring/
+when: 1542386532.59783
