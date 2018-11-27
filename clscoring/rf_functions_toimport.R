@@ -1,18 +1,35 @@
 library(randomForest)
-#library(reprtree)
 library(ROCR)
 library(knitr)
-#library(maftools)
+
 
 #separated from .Rmd for easier importing
 #and because I'm a crummy coder
 
+#' Title
+#'
+#' @param n 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 silly_two <- function(n=5){
   Sys.sleep(4)
   return(dim(TCGA_histology)[[1]]*n)
   
 }
 
+#' Title
+#'
+#' @param n 
+#' @param mt 
+#' @param viz 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 rf_default <- function(n=800,mt=70, viz=F){
 
   sample_hist <- TCGA_histology[[2]]
@@ -55,9 +72,13 @@ rf_default <- function(n=800,mt=70, viz=F){
   
 }
 
-#mess
-#?wee
-#?wee_cl
+
+#' Title
+#'
+#' @return
+#' @export
+#'
+#' @examples
 cl_cont_on_rf <- function(){
   RF_cellline_prediction_continuous <- predict(RFmodel, newdata=CN_endometrial_CCLE, type="prob")
   kable(RF_cellline_prediction_continuous[order(RF_cellline_prediction_continuous[,1]),], format = "markdown")
