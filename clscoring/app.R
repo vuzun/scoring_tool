@@ -3,14 +3,11 @@
 
 
 # TODO:
-#   * add mut/exp
+#   * add all datas
 #   * specifying mut/cn/exp profile (default top x from rf)
 #   * ?best cl for a tumour
-#   *
 
-
-
-
+ 
 
 #have a preproc file
 

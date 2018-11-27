@@ -3,26 +3,35 @@ ui <- navbarPage("Cell line scoring",
                  
                  tabPanel("Start",
                           sidebarLayout(
-                            sidebarPanel("Select tumour type and cell line:",
+                            sidebarPanel("Select tumour and cell line type:",
                                          selectInput("tum", label = "Tumour type:", 
                                                      list("Tumour cohorts" = c("UCEC", "BRCA"))),
                                          actionButton("do_model", "Build a model"),
                                          hr(),
-                                         selectInput("cl", label = "Pick a CL of x type",
+                                         radioButtons("datatypeSelected", "Data types",
+                                                      choices = list("Expression" = "exp",
+                                                                     "Copy number" = "cn",
+                                                                     "Mutation" = "mut",
+                                                                     "Combination" = "combo"),
+                                                      selected = "cn"
+                                         ),
+                                         hr(),
+                                         selectInput("cl", label = "Select a CL of x type",
                                                      choices = c("AN3CA", "MFE-280", "JHUEM-3") ),
-                                         actionButton("do_score", "Score the cell line")#,
+                                         actionButton("do_score", "Score the cell line"),
+                                         actionButton("do_score_2","Score all")#,
                                          #hr(), hr(),
                                          
                             ),
                             mainPanel("Tumour classifier performance - F1= ",
-                                      plotOutput("mds"),
                                       hr(),
+                                      plotOutput("mds"),
                                       textOutput("rez"),
                                       textOutput("cl_dist"),
-                                      tableOutput("feele"))
+                                      tableOutput("feele"),
+                                      plotOutput("plotscore"))
                           )
                  ),
-                 
                  tabPanel("Update classifications",
                           sidebarLayout(
                             sidebarPanel(
@@ -37,15 +46,21 @@ ui <- navbarPage("Cell line scoring",
                           )
                  ),
                  
-                 tabPanel("Data type integration",
-                          checkboxGroupInput("typeSelected",
-                                             h3("Data types used"),
+
+                 
+                 tabPanel("Cell line distances",
+                          sidebarLayout(sidebarPanel(),mainPanel(
+                          actionButton("do_dists", "Calculate dist for selected classifications and tumour set"),
+                          
+                          
+                          checkboxGroupInput("deldis",
+                                             h3("Dat"),
                                              choices = list("Expression" = 1,
                                                             "Copy number" = 2,
                                                             "Mutation" = 3),
                                              selected = c(1,2,3)
-                                             )
-                   
+                          )
+                          ))
                  )
                  
 )
