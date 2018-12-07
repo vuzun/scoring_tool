@@ -12,3 +12,11 @@ source("rf_functions_toimport.R")
 
 
 set.seed(2001)
+
+#---todo---
+#
+#AUC
+#combo
+#mds cell line
+#WORKING CUSTOM SCHEMES
+#mds doesnt show

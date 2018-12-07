@@ -85,7 +85,10 @@ ui <- navbarPage("Cell line scoring",
                           ))
                  ),
                  tabPanel("About",
-                          sidebarLayout(sidebarPanel(
+                          sidebarLayout(sidebarPanel("This application was developed as a part of the PhD project: 'Application of computational
+                                                     methods to the assessment of clinical relevance of preclinical cancer models'",
+                                                     br(),
+                                                     "Author: Vladimir Uzun, The University of Sheffield."
 
                           ),mainPanel(
                           ))

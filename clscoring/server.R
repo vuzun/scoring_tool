@@ -38,11 +38,13 @@ server <- function(input, output, session){ #clientData,
                      vals$pdat <- switch(input$datatypeSelected,
                             cn=ucec_cn,
                             mut=ucec_mut,
-                            exp=ucec_rsem)
+                            exp=ucec_rsem,
+                            combo=data_combine(type="patient",ucec_cn, ucec_mut, ucec_rsem))
                      vals$cldat <- switch(input$datatypeSelected,
                                           cn=cl_cn_ucec,
                                           mut=cl_maf_ucec,
-                                          exp=cl_rsem_ucec)
+                                          exp=cl_rsem_ucec,
+                                          combo=data_combine(type="CL",cl_cn_ucec, cl_maf_ucec, cl_rsem_ucec))
                      vals$histdat<-UCEC_histology
                  }
                  
@@ -50,11 +52,14 @@ server <- function(input, output, session){ #clientData,
                    vals$pdat <- switch(input$datatypeSelected,
                                        cn=brca_cn,
                                        mut=brca_mut,
-                                       exp=brca_rsem)
+                                       exp=brca_rsem,
+                                       combo=data_combine(type="patient",brca_cn, brca_mut, brca_rsem=))
+                   
                    vals$cldat <- switch(input$datatypeSelected,
                                        cn=brcacl_cn,
                                        mut=brcacl_mut,
-                                       exp=brcalcl_rsem)
+                                       exp=brcalcl_rsem,
+                                       combo=data_combine(type="CL",brcacl_cn, brcacl_mut, brcalcl_rsem))
                    vals$histdat <- BRCA_histology
                  }
                  
@@ -63,9 +68,8 @@ server <- function(input, output, session){ #clientData,
                 environment(rf_default) <- environment() #isuse R je odvratan, a i ja
                 vals$rf <<- rf_default(histology=vals$histdat,
                                         patient_data=vals$pdat)
-                dev.off()
-                MDSplot(vals$rf, training_set$class, palette=c(3,2))
-                vals$rfmds <<- recordPlot()
+                vals$rfmds <<- MDSplot(vals$rf, training_set$class, palette=c(3,2))
+                
 
                  
                }

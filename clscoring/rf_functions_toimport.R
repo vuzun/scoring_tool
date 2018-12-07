@@ -1,18 +1,25 @@
 
-#' randomForest wrapper for Shiny app
+#' random forest wrapper for training/testiing samples with 'randomForest'
 #'
-#' @param n Number of trees
-#' @param mt Mt variable.
-#' @param viz 
+#' @param histology Nx2 dataframe with class in the 2nd column.
+#' @param patient_data NxM dataframe with already aligned rows to histology.
+#' @param n Random forest parameter: number of trees. Defaults to 800.
+#' @param mt Random forest parameter: number of different variable tries per node.
+#' Defaults to sqrt(number of variables).
+#' @param viz Flag for plotting or no plotting of MDS.
 #'
-#' @return
+#' @return R object of class 'randomForest'
 #' @export
 #'
-#' @examples
+#' @examples rf_default(UCEC_histology, UCEC_copy_number_TCGA)
 rf_default <- function(histology=CN_histology,
                        patient_data=CN_endometrial_TCGA,
                        n=800, newmt=(-1), viz=F){
 
+  
+  
+  histology <- histology[na.omit(match(rownames(patient_data), histology[[1]] )),]
+  patient_data <- patient_data[na.omit(match(histology[[1]],rownames(patient_data))),]
   
   sample_hist <- histology[[2]]
   
@@ -41,11 +48,6 @@ rf_default <- function(histology=CN_histology,
   training_set<<-as.data.frame(patient_data[training_inds,])
   testing_set<<-as.data.frame(patient_data[-training_inds,])
   
-
-  
-  #training_set$class<<-as.factor(histology_vector[training_inds]) #
-  #testing_set$class<<-as.factor(histology_vector[-training_inds])
-  
   
   RFmodel <- randomForest(class ~ ., data=training_set,
                            importance=TRUE, ntree=n, keep.forest=TRUE, proximity=TRUE, mtry=mt)
@@ -60,6 +62,54 @@ rf_default <- function(histology=CN_histology,
   
 }
 
+
+data_combine <- function(type, cn, mut, exp, histology=NULL, subtypesize_min=100, patient_colnames=NULL){
+  
+  colnames(cn) <- colnames(cn) %>% paste0("_CN")
+  colnames(mut) <- colnames(mut) %>% paste0("_MUT")
+  colnames(exp) <- colnames(exp) %>% paste0("_EXP")
+  
+  if(type=="patient"){
+
+    int_cnmut<- intersect(rownames(cn),rownames(mut))
+    int_cnexp <- intersect(rownames(cn),rownames(exp))
+    int_expmut <- intersect(rownames(exp),rownames(mut))
+    int_all <- intersect(intersect(rownames(cn),rownames(mut)), rownmaes(exp))
+    
+    if(int_all > subtypesize_min){
+      cn <- cn[which(rownames(cn) %in% int_all),]
+      mut <- mut[which(rownames(mut) %in% int_all),]
+      exp <- exp[which(rownames(exp) %in% int_all),]
+      
+      #rescaling
+      
+      final_merge <- do.call(cbind, list(cn, mut, exp))
+      
+    }else if(max(int_expmut, int_cnexp, int_cnmut)>subtypesize_min){
+      datas <- switch(which.max(c(int_expmut, int_cnexp, int_cnmut)),
+                      list(exp,mut),
+                      list(cn, exp),
+                      list(cn, mut)
+             )
+      final_merge <- do.call(cbind, datas)
+      
+      
+    }else{
+      print("Too small.")
+      final_merge <- cn
+    }
+  }
+  else{
+  cn <- cn[,which(colnames(cn) %in% patient_colnames)]
+  exp <- exp[,which(colnames(exp) %in% patient_colnames)]
+  mut <- mut[,which(colnames(mut) %in% patient_colnames)]
+  
+  final_merge <- do.call(cbind, list(cn, exp, mut))
+  final_merge <- final_merge[,match(patient_colnames ,colnames(final_merge))]
+  final_merge
+  
+  }
+}
 
 all_cl_barplot <- function(cldf, pat, rf){
   cldf <- rbind(pat[1,],cldf)
@@ -122,7 +172,7 @@ plot_shiny_distance <- function(mind){
     geom_bar(stat="identity", position = position_dodge(), colour="black") +
     theme(axis.text.x = element_text(angle = 45), axis.text.y = element_text(hjust = 0.5, vjust = 0.5)) +
     scale_fill_viridis_d() +
-    labs(y="Samples wiht this cell line as closest")+
+    labs(y="Samples with this cell line as closest")+
     coord_flip()
 }
 
