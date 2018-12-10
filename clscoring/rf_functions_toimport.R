@@ -17,6 +17,7 @@ rf_default <- function(histology=CN_histology,
                        n=800, newmt=(-1), viz=F){
 
   
+  ##plot(stats::cmdscale(1 - rfUC$proximity, eig = TRUE, k = 2)$points, col=ifelse(training_set$class==1, "yellow", "purple"), pch=19)
   
   histology <- histology[na.omit(match(rownames(patient_data), histology[[1]] )),]
   patient_data <- patient_data[na.omit(match(histology[[1]],rownames(patient_data))),]
@@ -71,12 +72,12 @@ data_combine <- function(type, cn, mut, exp, histology=NULL, subtypesize_min=100
   
   if(type=="patient"){
 
-    int_cnmut<- intersect(rownames(cn),rownames(mut))
+    int_cnmut<- intersect(rownames(cn),rownames(mut)) 
     int_cnexp <- intersect(rownames(cn),rownames(exp))
     int_expmut <- intersect(rownames(exp),rownames(mut))
-    int_all <- intersect(intersect(rownames(cn),rownames(mut)), rownmaes(exp))
+    int_all <- intersect(intersect(rownames(cn),rownames(mut)), rownames(exp))
     
-    if(int_all > subtypesize_min){
+    if(length(int_all) > subtypesize_min){
       cn <- cn[which(rownames(cn) %in% int_all),]
       mut <- mut[which(rownames(mut) %in% int_all),]
       exp <- exp[which(rownames(exp) %in% int_all),]
@@ -85,8 +86,9 @@ data_combine <- function(type, cn, mut, exp, histology=NULL, subtypesize_min=100
       
       final_merge <- do.call(cbind, list(cn, mut, exp))
       
-    }else if(max(int_expmut, int_cnexp, int_cnmut)>subtypesize_min){
-      datas <- switch(which.max(c(int_expmut, int_cnexp, int_cnmut)),
+    }else if(max(int_expmut %>% length, int_cnexp %>% length, int_cnmut %>% length)>subtypesize_min){
+      int_lens <- c(int_expmut %>% length, int_cnexp %>% length(), int_cnmut %>% length())
+      datas <- switch(which.max(int_lens),
                       list(exp,mut),
                       list(cn, exp),
                       list(cn, mut)
@@ -95,18 +97,24 @@ data_combine <- function(type, cn, mut, exp, histology=NULL, subtypesize_min=100
       
       
     }else{
-      print("Too small.")
+      print("Too small.") #throw an error?
       final_merge <- cn
     }
   }
   else{
-  cn <- cn[,which(colnames(cn) %in% patient_colnames)]
-  exp <- exp[,which(colnames(exp) %in% patient_colnames)]
-  mut <- mut[,which(colnames(mut) %in% patient_colnames)]
+
+    int_all <- intersect(intersect(rownames(cn), rownames(exp)), rownames(mut))
+    
+    cn <- cn[match(int_all, rownames(cn)),which(colnames(cn) %in% patient_colnames)]
+    exp <- exp[match(int_all, rownames(exp)),which(colnames(exp) %in% patient_colnames)]
+    mut <- mut[match(int_all, rownames(mut)),which(colnames(mut) %in% patient_colnames)]
+    
   
-  final_merge <- do.call(cbind, list(cn, exp, mut))
-  final_merge <- final_merge[,match(patient_colnames ,colnames(final_merge))]
-  final_merge
+        
+  
+    final_merge <- do.call(cbind, list(cn, exp, mut))
+    final_merge <- final_merge[,match(patient_colnames ,colnames(final_merge))]
+    final_merge
   
   }
 }

@@ -44,7 +44,8 @@ server <- function(input, output, session){ #clientData,
                                           cn=cl_cn_ucec,
                                           mut=cl_maf_ucec,
                                           exp=cl_rsem_ucec,
-                                          combo=data_combine(type="CL",cl_cn_ucec, cl_maf_ucec, cl_rsem_ucec))
+                                          combo=data_combine(type="CL",cl_cn_ucec, cl_maf_ucec, cl_rsem_ucec,
+                                                             patient_colnames = colnames(vals$pdat)))
                      vals$histdat<-UCEC_histology
                  }
                  
