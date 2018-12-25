@@ -55,7 +55,7 @@ rf_default <- function(histology=CN_histology,
   
   #how to interpret this better?
   if(viz==T)
-    MDSplot(RFmodel, training_set$class, palette=c(3,2))
+    MDSplot(RFmodel, training_set$class, palette=c("blue","orange"))
   
   cancer_pred <<- predict(RFmodel, newdata=testing_set)
   return(RFmodel)
@@ -114,6 +114,7 @@ data_combine <- function(type, cn, mut, exp, histology=NULL, subtypesize_min=100
   
     final_merge <- do.call(cbind, list(cn, exp, mut))
     final_merge <- final_merge[,match(patient_colnames ,colnames(final_merge))]
+    print(final_merge %>% dim)
     final_merge
   
   }
@@ -152,7 +153,7 @@ cldist_min_per_type <- function(cldist, histdata){
   
   
   minmax <- minmax %>% group_by(Min) %>%
-    summarise(c1=sum(class==classes[1]), c2=sum(class==classes[2]))
+    summarise(c1=sum(as.double(class==classes[1])), c2=sum(as.double(class==classes[2])))
   
   colnames(minmax)[2:3] <- classes
   

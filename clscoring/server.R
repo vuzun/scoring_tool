@@ -18,7 +18,7 @@ server <- function(input, output, session){ #clientData,
   #input$datatypeSelected
   
   
-  vals <- reactiveValues(rf = NULL, rfmds = hist(c(1,2,3)), dtype=NULL,
+  vals <- reactiveValues(rf = NULL, rfmds = NULL, dtype=NULL,
                          pdat=NULL, cldat=NULL, histdat=NULL, histname="Default", i=0)
   
   #updating TCGA barcode classification
@@ -54,13 +54,14 @@ server <- function(input, output, session){ #clientData,
                                        cn=brca_cn,
                                        mut=brca_mut,
                                        exp=brca_rsem,
-                                       combo=data_combine(type="patient",brca_cn, brca_mut, brca_rsem=))
+                                       combo=data_combine(type="patient",brca_cn, brca_mut, brca_rsem))
                    
                    vals$cldat <- switch(input$datatypeSelected,
                                        cn=brcacl_cn,
                                        mut=brcacl_mut,
                                        exp=brcalcl_rsem,
-                                       combo=data_combine(type="CL",brcacl_cn, brcacl_mut, brcalcl_rsem))
+                                       combo=data_combine(type="CL",brcacl_cn, brcacl_mut, brcalcl_rsem,
+                                                          patient_colnames = colnames(vals$pdat)))
                    vals$histdat <- BRCA_histology
                  }
                  
@@ -69,7 +70,10 @@ server <- function(input, output, session){ #clientData,
                 environment(rf_default) <- environment() #isuse R je odvratan, a i ja
                 vals$rf <<- rf_default(histology=vals$histdat,
                                         patient_data=vals$pdat)
-                vals$rfmds <<- MDSplot(vals$rf, training_set$class, palette=c(3,2))
+                
+                plot(stats::cmdscale(1 - vals$rf$proximity, eig = TRUE, k = 2)$points,
+                     col=ifelse(training_set$class==1, "orange", "blue"), pch=19, xlab="Dim 1", ylab="Dim 2")
+                vals$rfmds <<- recordPlot()
                 
 
                  
@@ -84,14 +88,26 @@ server <- function(input, output, session){ #clientData,
                                 }
                                 else{
                                   
+                                  clproximity <- predict(vals$rf,
+                                                         rbind(vals$cldat[input$cl,],training_set[,-ncol(training_set)]),
+                                                         type="prob", proximity=TRUE)
+                                  
                                   clpreds <- predict(vals$rf, vals$cldat, type="prob")
+                                  plot(stats::cmdscale(1 - clproximity$proximity, eig = TRUE, k = 3)$points,
+                                       col=c("black",
+                                             ifelse(training_set$class==1, "orange", "blue")),
+                                       pch=c(4, rep(19, length(training_set$class))), xlab="Dim 1", ylab="Dim 2")
+                                  vals$rfmds <<- recordPlot()
                                   paste("A subtype score of", input$cl, ":",
                                         clpreds[input$cl,1])
+                                  
+
                                 }
                                 
                               }
   )
   
+  #scoring all cell lines
   rez_all_cl_plot <- eventReactive(input$do_score_2,
                               {
                                 if(is.null(vals$rf)){
@@ -103,6 +119,7 @@ server <- function(input, output, session){ #clientData,
                               }
   )
   
+  #making the distances plot
   cl_dists <- eventReactive(input$do_dists,
                             {
                               
