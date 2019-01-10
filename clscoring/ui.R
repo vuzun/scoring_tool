@@ -27,7 +27,7 @@ ui <- navbarPage("Cell line scoring",
                                          #hr(), hr(),
                                          
                             ),
-                            mainPanel("Classification scheme: Default",
+                            mainPanel(textOutput("histname2"),
                                       br(),
                                       "Tumour classifier performance - AUC= 0.87",
                                       hr(),
@@ -46,7 +46,7 @@ ui <- navbarPage("Cell line scoring",
                                                    "text/comma-separated-values,text/plain", ".csv")),
                               actionButton("barcode_update","Update the classification scheme"),
                               hr(),
-                              actionButton("download","Download the current scheme")
+                              downloadButton("classification_scheme","Download the current scheme")
                               
                             ),
                             mainPanel("You can provide a different classification scheme or download the current one.",br(),

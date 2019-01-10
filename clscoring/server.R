@@ -19,7 +19,8 @@ server <- function(input, output, session){ #clientData,
   
   
   vals <- reactiveValues(rf = NULL, rfmds = NULL, dtype=NULL,
-                         pdat=NULL, cldat=NULL, histdat=NULL, histname="Default", i=0)
+                         pdat=NULL, cldat=NULL, histdat=NULL, histname="Default classification scheme", i=0,
+                         building_flag=0)
   
   #updating TCGA barcode classification
   observeEvent(input$barcode_update,
@@ -27,13 +28,18 @@ server <- function(input, output, session){ #clientData,
                  req(input$fajla)
                  vals$histdat <<- read.csv(input$fajla$datapath)
                  vals$i<-vals$i+1
-                 vals$histname <<- paste("Custom classification",vals$i)
+                 vals$histname <<- paste("Custom classification scheme",vals$i)
                  #output$tcga_table <- head(vals$hisdat)
                })
+  
   
   #building rf tumour model and generating the plot
   observeEvent(input$do_model,
                {
+                 progress <- Progress$new(min=0,max=2)
+                 on.exit(progress$close())
+                 progress$set(message="Processing...", value=1.5)
+                 
                  if(input$tum=="UCEC"){
                      vals$pdat <- switch(input$datatypeSelected,
                             cn=ucec_cn,
@@ -48,14 +54,14 @@ server <- function(input, output, session){ #clientData,
                                                              patient_colnames = colnames(vals$pdat)))
                      vals$histdat<-UCEC_histology
                  }
-                 
+
                  if(input$tum=="BRCA"){
                    vals$pdat <- switch(input$datatypeSelected,
                                        cn=brca_cn,
                                        mut=brca_mut,
                                        exp=brca_rsem,
                                        combo=data_combine(type="patient",brca_cn, brca_mut, brca_rsem))
-                   
+
                    vals$cldat <- switch(input$datatypeSelected,
                                        cn=brcacl_cn,
                                        mut=brcacl_mut,
@@ -64,19 +70,20 @@ server <- function(input, output, session){ #clientData,
                                                           patient_colnames = colnames(vals$pdat)))
                    vals$histdat <- BRCA_histology
                  }
-                 
 
-                 
-                environment(rf_default) <- environment() #isuse R je odvratan, a i ja
+
+                vals$building_flag <<- 1
+
+                environment(rf_default) <- environment() #this is ugly
                 vals$rf <<- rf_default(histology=vals$histdat,
                                         patient_data=vals$pdat)
-                
-                plot(stats::cmdscale(1 - vals$rf$proximity, eig = TRUE, k = 2)$points,
+
+                plot(stats::cmdscale(1 - vals$rf$proximity, k = 2, eig = TRUE)$points,
                      col=ifelse(training_set$class==1, "orange", "blue"), pch=19, xlab="Dim 1", ylab="Dim 2")
                 vals$rfmds <<- recordPlot()
-                
 
-                 
+
+
                }
   )
   
@@ -93,12 +100,12 @@ server <- function(input, output, session){ #clientData,
                                                          type="prob", proximity=TRUE)
                                   
                                   clpreds <- predict(vals$rf, vals$cldat, type="prob")
-                                  plot(stats::cmdscale(1 - clproximity$proximity, eig = TRUE, k = 3)$points,
+                                  plot(stats::cmdscale(1 - clproximity$proximity, k = 3, eig = TRUE)$points,
                                        col=c("black",
                                              ifelse(training_set$class==1, "orange", "blue")),
                                        pch=c(4, rep(19, length(training_set$class))), xlab="Dim 1", ylab="Dim 2")
                                   vals$rfmds <<- recordPlot()
-                                  paste("A subtype score of", input$cl, ":",
+                                  paste("Subtype score of", input$cl, ":",
                                         clpreds[input$cl,1])
                                   
 
@@ -135,10 +142,12 @@ server <- function(input, output, session){ #clientData,
   
   
   output$mds <- renderPlot(vals$rfmds)
+  
   output$pred <- renderText(cancer_pred)
   output$rez <- renderText(rez_cl_tum())
   
   output$histname <- renderText(vals$histname)
+  output$histname2 <- renderText(vals$histname)
   
   output$plotscore <- renderPlot({
       if(is.null(vals$rf)) return(NULL)
@@ -156,6 +165,13 @@ server <- function(input, output, session){ #clientData,
   output$tcga_table <- renderTable({
     head(vals$histdat, 15)
   })
+  
+  output$classification_scheme <- downloadHandler(
+    filename = "classification_scheme.csv", 
+    content = function(file){
+      write.csv(vals$histdat, file, row.names = F)###
+    }
+  )
   
   output$tum <- renderText(input$tum)
   output$datatypeSelected <- renderText(
