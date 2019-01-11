@@ -4,11 +4,8 @@ server <- function(input, output, session){ #clientData,
   #changes cell line selection based on tumour type selected
   observe({
     c_tum <- input$tum
-    #data_type <- input$datatypeSelected
-    #ucec_cl_x <- switch(data_type,)
-    #brca_cl_x <- switch(data_type,)
     cls <- switch(c_tum,
-                  UCEC = rownames(cl_cn_ucec), #c("AN3CA", "MFE"),
+                  UCEC = rownames(cl_cn_ucec),
                   BRCA = rownames(brcacl_cn))
     updateSelectInput(session, "cl",
                       label = paste("Select a cell line of", input$tum,"type:"),
@@ -19,8 +16,11 @@ server <- function(input, output, session){ #clientData,
   
   
   vals <- reactiveValues(rf = NULL, rfmds = NULL, dtype=NULL,
-                         pdat=NULL, cldat=NULL, histdat=NULL, histname="Default classification scheme", i=0,
-                         building_flag=0)
+                         pdat=NULL, cldat=NULL, histdat=UCEC_histology,
+                         histucec=UCEC_histology, histbrca=BRCA_histology,
+                         histname="Default classification scheme", i=0,
+                         building_flag=0,
+                         ucecdefault=UCEC_histology, brcadefault=BRCA_histology)
   
   #updating TCGA barcode classification
   observeEvent(input$barcode_update,
@@ -29,9 +29,18 @@ server <- function(input, output, session){ #clientData,
                  vals$histdat <<- read.csv(input$fajla$datapath)
                  vals$i<-vals$i+1
                  vals$histname <<- paste("Custom classification scheme",vals$i)
-                 #output$tcga_table <- head(vals$hisdat)
+                 output$tcga_table <- renderTable({
+                   head(vals$histdat, 15)
+                 })
                })
   
+  
+  #setting back the default classification scheme for the selected cancer type
+  observeEvent(input$set_default_scheme,
+               {
+                 vals$histname <<- "Default classification scheme"
+                 vals$histdat <<- ifelse(input$tum=="UCEC",vals$ucecdefault, vals$brcadefault)
+               })
   
   #building rf tumour model and generating the plot
   observeEvent(input$do_model,
@@ -50,7 +59,8 @@ server <- function(input, output, session){ #clientData,
                                           cn=cl_cn_ucec,
                                           mut=cl_maf_ucec,
                                           exp=cl_rsem_ucec,
-                                          combo=data_combine(type="CL",cl_cn_ucec, cl_maf_ucec, cl_rsem_ucec,
+                                          combo=data_combine(type="CL",
+                                                             cl_cn_ucec, cl_maf_ucec, cl_rsem_ucec,
                                                              patient_colnames = colnames(vals$pdat)))
                      vals$histdat<-UCEC_histology
                  }
@@ -60,13 +70,15 @@ server <- function(input, output, session){ #clientData,
                                        cn=brca_cn,
                                        mut=brca_mut,
                                        exp=brca_rsem,
-                                       combo=data_combine(type="patient",brca_cn, brca_mut, brca_rsem))
+                                       combo=data_combine(type="patient",
+                                                          brca_cn, brca_mut, brca_rsem))
 
                    vals$cldat <- switch(input$datatypeSelected,
                                        cn=brcacl_cn,
                                        mut=brcacl_mut,
                                        exp=brcalcl_rsem,
-                                       combo=data_combine(type="CL",brcacl_cn, brcacl_mut, brcalcl_rsem,
+                                       combo=data_combine(type="CL",
+                                                          brcacl_cn, brcacl_mut, brcalcl_rsem,
                                                           patient_colnames = colnames(vals$pdat)))
                    vals$histdat <- BRCA_histology
                  }
@@ -79,7 +91,8 @@ server <- function(input, output, session){ #clientData,
                                         patient_data=vals$pdat)
 
                 plot(stats::cmdscale(1 - vals$rf$proximity, k = 2, eig = TRUE)$points,
-                     col=ifelse(training_set$class==1, "orange", "blue"), pch=19, xlab="Dim 1", ylab="Dim 2")
+                     col=ifelse(training_set$class==1, "orange", "blue"), pch=19,
+                     xlab="Dim 1", ylab="Dim 2")
                 vals$rfmds <<- recordPlot()
 
 
@@ -96,14 +109,16 @@ server <- function(input, output, session){ #clientData,
                                 else{
                                   
                                   clproximity <- predict(vals$rf,
-                                                         rbind(vals$cldat[input$cl,],training_set[,-ncol(training_set)]),
+                                                         rbind(vals$cldat[input$cl,],
+                                                               training_set[,-ncol(training_set)]),
                                                          type="prob", proximity=TRUE)
                                   
                                   clpreds <- predict(vals$rf, vals$cldat, type="prob")
                                   plot(stats::cmdscale(1 - clproximity$proximity, k = 3, eig = TRUE)$points,
                                        col=c("black",
                                              ifelse(training_set$class==1, "orange", "blue")),
-                                       pch=c(4, rep(19, length(training_set$class))), xlab="Dim 1", ylab="Dim 2")
+                                       pch=c(4, rep(19, length(training_set$class))),
+                                       xlab="Dim 1", ylab="Dim 2")
                                   vals$rfmds <<- recordPlot()
                                   paste("Subtype score of", input$cl, ":",
                                         clpreds[input$cl,1])

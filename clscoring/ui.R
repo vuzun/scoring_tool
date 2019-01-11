@@ -46,6 +46,9 @@ ui <- navbarPage("Cell line scoring",
                                                    "text/comma-separated-values,text/plain", ".csv")),
                               actionButton("barcode_update","Update the classification scheme"),
                               hr(),
+                              actionButton("set_default_scheme",
+                                           HTML("Set the default scheme for <br/> the current cancer type")),
+                              hr(),
                               downloadButton("classification_scheme","Download the current scheme")
                               
                             ),
