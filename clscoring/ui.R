@@ -27,13 +27,17 @@ ui <- navbarPage("Cell line scoring",
                                          #hr(), hr(),
                                          
                             ),
-                            mainPanel(textOutput("histname2"),
+                            mainPanel(
+                              conditionalPanel(
+                                condition = "output.error_sample",
+                                "Cannot build a model! \nSample size of one of the classes is too small"
+                            ),
+                            textOutput("histname2"),
                                       br(),
                                       "Tumour classifier performance - AUC= 0.87",
                                       hr(),
                                       plotOutput("mds"),
                                       textOutput("rez"),
-                                      textOutput("cl_dist"),
                                       plotOutput("plotscore"))
                           )
                  ),

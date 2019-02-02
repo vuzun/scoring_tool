@@ -37,6 +37,11 @@ rf_default <- function(histology=CN_histology,
   
   size_trainclass <<- min(table(histology_vector))*0.8
   
+  # throws error, but this specific one should be caught higher up
+  if(size_trainclass < 10){
+    stop("Not enough samples for one of the classes.")
+  }
+  
   ser_inds <<- which(histology_vector==1)
   oid_inds <<- which(histology_vector==0)
   ser_train <<- sample(ser_inds, size_trainclass)
@@ -114,7 +119,7 @@ data_combine <- function(type, cn, mut, exp, histology=NULL, subtypesize_min=100
   
     final_merge <- do.call(cbind, list(cn, exp, mut))
     final_merge <- final_merge[,match(patient_colnames ,colnames(final_merge))]
-    print(final_merge %>% dim)
+    final_merge %>% dim %>% paste("- dimension of the final merge")
     final_merge
   
   }
@@ -183,6 +188,25 @@ plot_shiny_distance <- function(mind){
     scale_fill_viridis_d() +
     labs(y="Samples with this cell line as closest")+
     coord_flip()
+}
+
+
+do_new_hist_intersect <- function(user_hist, datalist){
+  bcodes_user <- user_hist[[1]]
+  bcodes_exp <- rownames(datalist[[1]])
+  bcodes_cn <- rownames(datalist[[2]])
+  bcodes_mut <- rownames(datalist[[3]])
+  
+  paste(length(bcodes_user), length(bcodes_cn), length(bcodes_exp), length(bcodes_mut)) %>% 
+    print
+  
+  bcodes_matched <- intersect(bcodes_user, bcodes_cn) %>% 
+    union(intersect(bcodes_user, bcodes_exp)) %>% 
+    union(intersect(bcodes_user, bcodes_mut))
+  
+  print(paste("Matched bcodes:", length(bcodes_matched)))
+  
+  user_hist[which(bcodes_matched %in% bcodes_user),]
 }
 
 

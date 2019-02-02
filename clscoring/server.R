@@ -15,19 +15,32 @@ server <- function(input, output, session){ #clientData,
   #input$datatypeSelected
   
   
+  #everything
   vals <- reactiveValues(rf = NULL, rfmds = NULL, dtype=NULL,
-                         pdat=NULL, cldat=NULL, histdat=UCEC_histology,
+                         pdat=NULL, cldat=NULL, rez_a_cl=NULL, histdat=UCEC_histology,
                          histucec=UCEC_histology, histbrca=BRCA_histology,
                          histname="Default classification scheme", i=0,
                          building_flag=0,
-                         ucecdefault=UCEC_histology, brcadefault=BRCA_histology)
+                         ucecdefault=UCEC_histology, brcadefault=BRCA_histology,
+                         error_samplesize=0)
+  
   
   #updating TCGA barcode classification
   observeEvent(input$barcode_update,
                {
                  req(input$fajla)
-                 vals$histdat <<- read.csv(input$fajla$datapath)
-                 vals$i<-vals$i+1
+                 userdef_hist <- read.csv(input$fajla$datapath)
+                 datalist_for_ctype <- switch(
+                   input$tum,
+                   UCEC=list(ucec_rsem, ucec_cn, ucec_mut),
+                   BRCA=list(brca_rsem, brca_cn, brca_mut)
+                  )
+                   
+                 vals$histdat <<- do_new_hist_intersect(userdef_hist, datalist_for_ctype)
+            
+                 #vals$histdat <<- read.csv(input$fajla$datapath)
+                 
+                 vals$i<<-vals$i+1
                  vals$histname <<- paste("Custom classification scheme",vals$i)
                  output$tcga_table <- renderTable({
                    head(vals$histdat, 15)
@@ -48,6 +61,8 @@ server <- function(input, output, session){ #clientData,
                  progress <- Progress$new(min=0,max=2)
                  on.exit(progress$close())
                  progress$set(message="Processing...", value=1.5)
+                 
+                 vals$error_samplesize <- 0
                  
                  if(input$tum=="UCEC"){
                      vals$pdat <- switch(input$datatypeSelected,
@@ -87,24 +102,38 @@ server <- function(input, output, session){ #clientData,
                 vals$building_flag <<- 1
 
                 environment(rf_default) <- environment() #this is ugly
-                vals$rf <<- rf_default(histology=vals$histdat,
-                                        patient_data=vals$pdat)
+                vals$rf <<- tryCatch(rf_default(histology=vals$histdat,
+                                        patient_data=vals$pdat),
+                                     
+                                     error=function(e){
+                                       if(e$message=="Not enough samples for one of the classes."){
+                                         vals$error_samplesize <<- 1
+                                         vals$rfmds <<- NULL
+                                       }else{
+                                         stop(e$message)
+                                       }
+                                         }
+                )
+                
+                if(vals$error_samplesize==0){
 
                 plot(stats::cmdscale(1 - vals$rf$proximity, k = 2, eig = TRUE)$points,
                      col=ifelse(training_set$class==1, "orange", "blue"), pch=19,
                      xlab="Dim 1", ylab="Dim 2")
                 vals$rfmds <<- recordPlot()
-
+                }
 
 
                }
   )
   
   #scoring cell line
-  rez_cl_tum <- eventReactive(input$do_score,
+  #rez_cl_tum <- eventReactive
+  observeEvent(input$do_score,
                               {
-                                if(is.null(vals$rf)){
-                                  paste(input$tum, input$cl)
+                                if(is.null(vals$rf) | vals$error_samplesize>0){
+                                  vals$rez_a_cl <<- NULL
+                                  #paste(input$tum, input$cl)
                                 }
                                 else{
                                   
@@ -120,7 +149,8 @@ server <- function(input, output, session){ #clientData,
                                        pch=c(4, rep(19, length(training_set$class))),
                                        xlab="Dim 1", ylab="Dim 2")
                                   vals$rfmds <<- recordPlot()
-                                  paste("Subtype score of", input$cl, ":",
+                                  
+                                  vals$rez_a_cl <<- paste("Subtype score of", input$cl, ":",
                                         clpreds[input$cl,1])
                                   
 
@@ -156,10 +186,21 @@ server <- function(input, output, session){ #clientData,
   
   
   
+
+  output$error_sample <- reactive({
+    vals$error_samplesize==1
+  })
+  outputOptions(output, 'error_sample', suspendWhenHidden=FALSE)
+
+  
   output$mds <- renderPlot(vals$rfmds)
   
   output$pred <- renderText(cancer_pred)
-  output$rez <- renderText(rez_cl_tum())
+  output$rez <- renderText({
+    if(is.null(vals$rf)) return(NULL)
+    vals$rez_a_cl
+    })
+  #output$rez <- renderText(rez_cl_tum())
   
   output$histname <- renderText(vals$histname)
   output$histname2 <- renderText(vals$histname)
