@@ -5,10 +5,8 @@ library(knitr)
 library(tidyverse); library(magrittr); library(purrr)
 library(png); library(grid)
 
-#load("for_app.Rdata")
 load("for_app_BRCA.Rdata")
 load("for_app_UCEC.Rdata")
-proc_img <- readPNG("../data/processing.png")
 
 source("rf_functions_toimport.R")
 

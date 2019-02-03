@@ -62,7 +62,7 @@ server <- function(input, output, session){ #clientData,
                  on.exit(progress$close())
                  progress$set(message="Processing...", value=1.5)
                  
-                 vals$error_samplesize <- 0
+                 vals$error_samplesize <<- 0
                  
                  if(input$tum=="UCEC"){
                      vals$pdat <- switch(input$datatypeSelected,
@@ -121,6 +121,7 @@ server <- function(input, output, session){ #clientData,
                      col=ifelse(training_set$class==1, "orange", "blue"), pch=19,
                      xlab="Dim 1", ylab="Dim 2")
                 vals$rfmds <<- recordPlot()
+                
                 }
 
 
@@ -143,13 +144,14 @@ server <- function(input, output, session){ #clientData,
                                                          type="prob", proximity=TRUE)
                                   
                                   clpreds <- predict(vals$rf, vals$cldat, type="prob")
+                                  dev.control("enable")
                                   plot(stats::cmdscale(1 - clproximity$proximity, k = 3, eig = TRUE)$points,
                                        col=c("black",
                                              ifelse(training_set$class==1, "orange", "blue")),
                                        pch=c(4, rep(19, length(training_set$class))),
                                        xlab="Dim 1", ylab="Dim 2")
                                   vals$rfmds <<- recordPlot()
-                                  
+                                  dev.off()
                                   vals$rez_a_cl <<- paste("Subtype score of", input$cl, ":",
                                         clpreds[input$cl,1])
                                   
@@ -193,7 +195,9 @@ server <- function(input, output, session){ #clientData,
   outputOptions(output, 'error_sample', suspendWhenHidden=FALSE)
 
   
-  output$mds <- renderPlot(vals$rfmds)
+  output$mds <- renderPlot({
+    if(is.null(vals$rfmds)) return(NULL)
+    replayPlot(vals$rfmds)})
   
   output$pred <- renderText(cancer_pred)
   output$rez <- renderText({

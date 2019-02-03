@@ -5,6 +5,8 @@ account: cell-line-scoring
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 576312
-bundleId: 1748203
+bundleId: 1853388
 url: https://cell-line-scoring.shinyapps.io/clscoring/
-when: 1544200847.01564
+when: 1549218839.15571
+asMultiple: FALSE
+asStatic: FALSE
