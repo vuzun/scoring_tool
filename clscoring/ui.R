@@ -30,11 +30,11 @@ ui <- navbarPage("Cell line scoring",
                             mainPanel(
                               conditionalPanel(
                                 condition = "output.error_sample",
-                                "Cannot build a model! \nSample size of one of the classes is too small"
+                                "Cannot build a model! \n Sample size of one of the classes is too small"
                             ),
                             textOutput("histname2"),
                                       br(),
-                                      "Tumour classifier performance - AUC= 0.00",
+                                      "Tumour classifier performance - AUC =", textOutput("auc"),
                                       hr(),
                                       plotOutput("mds"),
                                       textOutput("rez"),

@@ -102,7 +102,7 @@ server <- function(input, output, session){ #clientData,
                 vals$building_flag <<- 1
 
                 environment(rf_default) <- environment() #this is ugly
-                vals$rf <<- tryCatch(rf_default(histology=vals$histdat,
+                rf_run <- tryCatch(rf_default(histology=vals$histdat,
                                         patient_data=vals$pdat),
                                      
                                      error=function(e){
@@ -115,13 +115,18 @@ server <- function(input, output, session){ #clientData,
                                          }
                 )
                 
+                vals$rf <<- rf_run$model
+                vals$auc <- rf_run$auc
+                
                 if(vals$error_samplesize==0){
 
-                plot(stats::cmdscale(1 - vals$rf$proximity, k = 2, eig = TRUE)$points,
+                  dev.new()
+                  dev.control("enable")
+                  plot(stats::cmdscale(1 - vals$rf$proximity, k = 2, eig = TRUE)$points,
                      col=ifelse(training_set$class==1, "orange", "blue"), pch=19,
                      xlab="Dim 1", ylab="Dim 2")
-                vals$rfmds <<- recordPlot()
-                
+                  vals$rfmds <<- recordPlot()
+                  dev.off()
                 }
 
 
@@ -144,6 +149,7 @@ server <- function(input, output, session){ #clientData,
                                                          type="prob", proximity=TRUE)
                                   
                                   clpreds <- predict(vals$rf, vals$cldat, type="prob")
+                                  dev.new()
                                   dev.control("enable")
                                   plot(stats::cmdscale(1 - clproximity$proximity, k = 3, eig = TRUE)$points,
                                        col=c("black",
@@ -177,6 +183,12 @@ server <- function(input, output, session){ #clientData,
   cl_dists <- eventReactive(input$do_dists,
                             {
                               
+                              if(is.null(vals$pdat)) return(NULL)
+                              
+                              progress <- Progress$new(min=0,max=2)
+                              on.exit(progress$close())
+                              progress$set(message="Processing...", value=1.5)
+                              
                               get_dists(cldata = vals$cldat, patdata = vals$pdat) %>%
                                 cldist_min_per_type(vals$histdat) %>%
                                 plot_shiny_distance()
@@ -194,12 +206,15 @@ server <- function(input, output, session){ #clientData,
   })
   outputOptions(output, 'error_sample', suspendWhenHidden=FALSE)
 
+  output$auc <- renderText({
+    if(is.null(vals$auc)) return(NULL)
+    as.character(round(vals$auc,2))
+  })
   
   output$mds <- renderPlot({
     if(is.null(vals$rfmds)) return(NULL)
     replayPlot(vals$rfmds)})
   
-  output$pred <- renderText(cancer_pred)
   output$rez <- renderText({
     if(is.null(vals$rf)) return(NULL)
     vals$rez_a_cl

@@ -62,8 +62,10 @@ rf_default <- function(histology=CN_histology,
   if(viz==T)
     MDSplot(RFmodel, training_set$class, palette=c("blue","orange"))
   
-  cancer_pred <<- predict(RFmodel, newdata=testing_set)
-  return(RFmodel)
+  
+  auc_score <- prediction(predict(RFmodel, newdata=testing_set,type="prob")[,2], testing_set$class) %>% 
+    performance("auc")
+  return(list("model"=RFmodel, "auc"=as.numeric(auc_score@y.values)))
   
   
 }
@@ -137,6 +139,10 @@ all_cl_barplot <- function(cldf, pat, rf){
 }
 
 do_distances_to_patients <- function(cl, pat_data){
+  #needs rescaling when data combined
+  #pat_data <- sapply(pat_data, function(co) as.character(co) %>% as.numeric) %>% as.data.frame
+  #cl <- as.numeric(cl)
+  #browser()
   apply(pat_data, 1, function(p_row) mean(abs(p_row-cl)) )
 }
 
@@ -148,6 +154,9 @@ get_dists <- function(cldata, patdata){
 }
 
 cldist_min_per_type <- function(cldist, histdata){
+
+  #browser()
+  
   minmax <- cldist %>%
     apply(1, function(ro) colnames(cldist)[c(which.min(ro), which.max(ro))]) %>%
     t %>% as.data.frame
@@ -156,6 +165,7 @@ cldist_min_per_type <- function(cldist, histdata){
   
   classes <- as.character(unique(minmax$class))
   
+  #browser()
   
   minmax <- minmax %>% group_by(Min) %>%
     summarise(c1=sum(as.double(class==classes[1])), c2=sum(as.double(class==classes[2])))
