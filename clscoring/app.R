@@ -17,3 +17,7 @@ library(shiny)
 # Running
 options(shiny.trace=TRUE)
 shinyApp(ui = ui, server = server)
+
+# cl in do dists is char???
+
+# replacement has 524 rows, data has 513 - cldist_min_per_type ---> histology mismatch

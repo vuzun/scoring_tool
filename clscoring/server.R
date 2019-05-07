@@ -71,11 +71,11 @@ server <- function(input, output, session){ #clientData,
                             exp=ucec_rsem,
                             combo=data_combine(type="patient",ucec_cn, ucec_mut, ucec_rsem))
                      vals$cldat <- switch(input$datatypeSelected,
-                                          cn=cl_cn_ucec,
+                                          cn=as.data.frame(cl_cn_ucec),
                                           mut=cl_maf_ucec,
                                           exp=cl_rsem_ucec,
                                           combo=data_combine(type="CL",
-                                                             cl_cn_ucec, cl_maf_ucec, cl_rsem_ucec,
+                                                             as.data.frame(cl_cn_ucec), cl_maf_ucec, cl_rsem_ucec,
                                                              patient_colnames = colnames(vals$pdat)))
                      vals$histdat<-UCEC_histology
                  }
@@ -97,6 +97,8 @@ server <- function(input, output, session){ #clientData,
                                                           patient_colnames = colnames(vals$pdat)))
                    vals$histdat <- BRCA_histology
                  }
+                 
+                 vals$histdat <- vals$histdat[na.omit(match(rownames(vals$pdat), vals$histdat[[1]] )),]
 
 
                 vals$building_flag <<- 1
@@ -188,6 +190,7 @@ server <- function(input, output, session){ #clientData,
                               progress <- Progress$new(min=0,max=2)
                               on.exit(progress$close())
                               progress$set(message="Processing...", value=1.5)
+                          
                               
                               get_dists(cldata = vals$cldat, patdata = vals$pdat) %>%
                                 cldist_min_per_type(vals$histdat) %>%

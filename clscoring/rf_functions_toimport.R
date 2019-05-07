@@ -143,20 +143,25 @@ do_distances_to_patients <- function(cl, pat_data){
   #pat_data <- sapply(pat_data, function(co) as.character(co) %>% as.numeric) %>% as.data.frame
   #cl <- as.numeric(cl)
   #browser()
+  pat_data %>% class %>% print
+  print(length(cl))
+  cl %>% class %>% print
   apply(pat_data, 1, function(p_row) mean(abs(p_row-cl)) )
 }
 
 
 get_dists <- function(cldata, patdata){
+ pat_rownames <- rownames(patdata)
+ patdata <- data.frame(patdata %>% apply(2, function(x) as.numeric(as.character(x))))
+ rownames(patdata) <- pat_rownames
+ #browser()
  as.data.frame(apply(cldata, 1,
-                     function(cl) do_distances_to_patients(cl, patdata)))
+                     function(cl) do_distances_to_patients(cl %>% as.character %>% as.numeric, patdata)))
   
 }
 
 cldist_min_per_type <- function(cldist, histdata){
 
-  #browser()
-  
   minmax <- cldist %>%
     apply(1, function(ro) colnames(cldist)[c(which.min(ro), which.max(ro))]) %>%
     t %>% as.data.frame
