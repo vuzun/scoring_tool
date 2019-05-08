@@ -8,8 +8,8 @@ ui <- navbarPage("Cell line scoring",
                                                      list("Tumour cohorts" = c("UCEC", "BRCA"))),
                                          br(),
                                          radioButtons("datatypeSelected", "Data types",
-                                                      choices = list("Expression" = "exp",
-                                                                     "Copy number" = "cn",
+                                                      choices = list("Copy number" = "cn",
+                                                                     "Expression" = "exp",
                                                                      "Mutation" = "mut",
                                                                      "Combination" = "combo"),
                                                       selected = "cn"
@@ -41,6 +41,7 @@ ui <- navbarPage("Cell line scoring",
                                       plotOutput("plotscore"))
                           )
                  ),
+                 
                  tabPanel("Classification schemes",
                           sidebarLayout(
                             sidebarPanel(
@@ -91,6 +92,7 @@ ui <- navbarPage("Cell line scoring",
                           plotOutput("plotcldist")
                           ))
                  ),
+                 
                  tabPanel("About",
                           sidebarLayout(sidebarPanel("This application was developed as a part of the PhD project: 'Application of computational
                                                      methods to the assessment of clinical relevance of preclinical cancer models'",

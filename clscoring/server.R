@@ -11,11 +11,10 @@ server <- function(input, output, session){ #clientData,
                       label = paste("Select a cell line of", input$tum,"type:"),
                       choices = cls)
   })
+
   
-  #input$datatypeSelected
   
-  
-  #everything
+  #data used
   vals <- reactiveValues(rf = NULL, rfmds = NULL, dtype=NULL,
                          pdat=NULL, cldat=NULL, rez_a_cl=NULL, histdat=UCEC_histology,
                          histucec=UCEC_histology, histbrca=BRCA_histology,
@@ -47,7 +46,6 @@ server <- function(input, output, session){ #clientData,
                  })
                })
   
-  
   #setting back the default classification scheme for the selected cancer type
   observeEvent(input$set_default_scheme,
                {
@@ -58,6 +56,7 @@ server <- function(input, output, session){ #clientData,
   #building rf tumour model and generating the plot
   observeEvent(input$do_model,
                {
+                 t_start <- Sys.time()
                  progress <- Progress$new(min=0,max=2)
                  on.exit(progress$close())
                  progress$set(message="Processing...", value=1.5)
@@ -99,10 +98,13 @@ server <- function(input, output, session){ #clientData,
                  }
                  
                  vals$histdat <- vals$histdat[na.omit(match(rownames(vals$pdat), vals$histdat[[1]] )),]
+                 vals$pdat <- vals$pdat[na.omit(match(vals$histdat[[1]], rownames(vals$pdat) )),]
 
 
                 vals$building_flag <<- 1
 
+                print(t_start-Sys.time())
+                
                 environment(rf_default) <- environment() #this is ugly
                 rf_run <- tryCatch(rf_default(histology=vals$histdat,
                                         patient_data=vals$pdat),
@@ -116,6 +118,8 @@ server <- function(input, output, session){ #clientData,
                                        }
                                          }
                 )
+                
+                print(t_start-Sys.time())
                 
                 vals$rf <<- rf_run$model
                 vals$auc <- rf_run$auc
@@ -187,10 +191,13 @@ server <- function(input, output, session){ #clientData,
                               
                               if(is.null(vals$pdat)) return(NULL)
                               
+                              vals$histdat
+                              
                               progress <- Progress$new(min=0,max=2)
                               on.exit(progress$close())
                               progress$set(message="Processing...", value=1.5)
                           
+                              #browser()
                               
                               get_dists(cldata = vals$cldat, patdata = vals$pdat) %>%
                                 cldist_min_per_type(vals$histdat) %>%

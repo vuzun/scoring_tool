@@ -14,7 +14,7 @@
 #' @examples rf_default(UCEC_histology, UCEC_copy_number_TCGA)
 rf_default <- function(histology=CN_histology,
                        patient_data=CN_endometrial_TCGA,
-                       n=800, newmt=(-1), viz=F){
+                       n=500, newmt=(-1), viz=F){
 
   
   ##plot(stats::cmdscale(1 - rfUC$proximity, eig = TRUE, k = 2)$points, col=ifelse(training_set$class==1, "yellow", "purple"), pch=19)
@@ -54,10 +54,11 @@ rf_default <- function(histology=CN_histology,
   training_set<<-as.data.frame(patient_data[training_inds,])
   testing_set<<-as.data.frame(patient_data[-training_inds,])
   
+  t_premodel <- Sys.time()
   
   RFmodel <- randomForest(class ~ ., data=training_set,
                            importance=TRUE, ntree=n, keep.forest=TRUE, proximity=TRUE, mtry=mt)
-  
+  paste0("--", Sys.time()-t_premodel) %>% print
   #how to interpret this better?
   if(viz==T)
     MDSplot(RFmodel, training_set$class, palette=c("blue","orange"))
@@ -143,9 +144,6 @@ do_distances_to_patients <- function(cl, pat_data){
   #pat_data <- sapply(pat_data, function(co) as.character(co) %>% as.numeric) %>% as.data.frame
   #cl <- as.numeric(cl)
   #browser()
-  pat_data %>% class %>% print
-  print(length(cl))
-  cl %>% class %>% print
   apply(pat_data, 1, function(p_row) mean(abs(p_row-cl)) )
 }
 
